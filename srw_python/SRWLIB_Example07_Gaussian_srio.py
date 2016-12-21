@@ -5,8 +5,7 @@
 
 
 
-import wpg
-from wpg.srwlib import *
+from srwlib import *
 #import uti_plot  #required for plotting
 
 from srxraylib.plot.gol import plot_image
