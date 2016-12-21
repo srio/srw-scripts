@@ -4,8 +4,10 @@
 #############################################################################
 
 
-from srwlib import *
-# import uti_plot  #required for plotting
+
+import wpg
+from wpg.srwlib import *
+#import uti_plot  #required for plotting
 
 from srxraylib.plot.gol import plot_image
 import numpy
@@ -372,7 +374,7 @@ def main():
   #     if arP3 != None:
   #         uti_plot2d(arP3, plotMesh3x, plotMesh3y, ['Horizontal Position [microns]', 'Vertical Position [microns]', 'Phase After Propagation to Waist'])
 
-  uti_plot_show() #show all graphs (blocks script execution; close all graph windows to proceed)
+  #wpg.uti_plot.uti_plot_show() #show all graphs (blocks script execution; close all graph windows to proceed)
   print('done')
 
 if __name__ == "__main__":
