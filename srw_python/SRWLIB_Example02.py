@@ -187,11 +187,25 @@ for i in range(partTraj.np): #converting from [m] to [mm] and from [rad] to [mra
     partTraj.arX[i] *= 1000
     partTraj.arYp[i] *= 1000
     partTraj.arY[i] *= 1000
-uti_plot1d(partTraj.arBy, ctMesh, ['ct [m]', 'Vertical Magnetic Field [T]'])
-uti_plot1d(partTraj.arXp, ctMesh, ['ct [m]', 'Horizontal Angle [mrad]'])
-uti_plot1d(partTraj.arX, ctMesh, ['ct [m]', 'Horizontal Position [mm]'])
-uti_plot1d(partTraj.arBx, ctMesh, ['ct [m]', 'Horizontal Magnetic Field [T]'])
-uti_plot1d(partTraj.arYp, ctMesh, ['ct [m]', 'Vertical Angle [mrad]'])
-uti_plot1d(partTraj.arY, ctMesh, ['ct [m]', 'Vertical Position [mm]'])
-uti_plot_show()
+
+# uti_plot1d(partTraj.arBy, ctMesh, ['ct [m]', 'Vertical Magnetic Field [T]'])
+# uti_plot1d(partTraj.arXp, ctMesh, ['ct [m]', 'Horizontal Angle [mrad]'])
+# uti_plot1d(partTraj.arX, ctMesh, ['ct [m]', 'Horizontal Position [mm]'])
+# uti_plot1d(partTraj.arBx, ctMesh, ['ct [m]', 'Horizontal Magnetic Field [T]'])
+# uti_plot1d(partTraj.arYp, ctMesh, ['ct [m]', 'Vertical Angle [mrad]'])
+# uti_plot1d(partTraj.arY, ctMesh, ['ct [m]', 'Vertical Position [mm]'])
+# uti_plot_show()
+
+from srxraylib.plot.gol import plot
+import numpy
+ctMeshx = numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2])
+plot(ctMeshx, partTraj.arBy, xtitle='ct [m]', ytitle='Vertical Magnetic Field [T]',show=False)
+plot(ctMeshx, partTraj.arXp, xtitle='ct [m]', ytitle='Horizontal Angle [mrad]',show=False)
+plot(ctMeshx, partTraj.arX,  xtitle='ct [m]', ytitle='Horizontal Position [mm]',show=False)
+plot(ctMeshx, partTraj.arBx, xtitle='ct [m]', ytitle='Horizontal Magnetic Field [T]',show=False)
+plot(ctMeshx, partTraj.arYp, xtitle='ct [m]', ytitle='Vertical Angle [mrad]',show=False)
+plot(ctMeshx, partTraj.arY,  xtitle='ct [m]', ytitle='Vertical Position [mm]',show=True)
+
+
+
 print('done')

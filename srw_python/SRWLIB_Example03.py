@@ -100,18 +100,34 @@ srwl_uti_save_intens_ascii(arI2, wfr2.mesh, os.path.join(os.getcwd(), strExDataF
 print('done')
 
 #**********************Plotting results (requires 3rd party graphics package)
+
+
+from srxraylib.plot.gol import plot,plot_image
+import numpy
+
 print('   Plotting the results (blocks script execution; close any graph windows to proceed) ... ', end='')
-uti_plot1d(arI1, [wfr1.mesh.eStart, wfr1.mesh.eFin, wfr1.mesh.ne], ['Photon Energy [eV]', 'Intensity [ph/s/.1%bw/mm^2]', 'On-Axis Spectrum'])
-uti_plot2d(arI2, [1000*wfr2.mesh.xStart, 1000*wfr2.mesh.xFin, wfr2.mesh.nx], [1000*wfr2.mesh.yStart, 1000*wfr2.mesh.yFin, wfr2.mesh.ny], ['Horizontal Position [mm]', 'Vertical Position [mm]', 'Intensity at ' + str(wfr2.mesh.eStart) + ' eV'])
+# uti_plot1d(arI1, [wfr1.mesh.eStart, wfr1.mesh.eFin, wfr1.mesh.ne], ['Photon Energy [eV]', 'Intensity [ph/s/.1%bw/mm^2]', 'On-Axis Spectrum'])
+
+plot( numpy.linspace(wfr1.mesh.eStart, wfr1.mesh.eFin, wfr1.mesh.ne), arI1, xtitle='Photon Energy [eV]', ytitle='Intensity [ph/s/.1%bw/mm^2]', title='On-Axis Spectrum',show=False)
+
+# uti_plot2d(arI2, [1000*wfr2.mesh.xStart, 1000*wfr2.mesh.xFin, wfr2.mesh.nx], [1000*wfr2.mesh.yStart, 1000*wfr2.mesh.yFin, wfr2.mesh.ny], ['Horizontal Position [mm]', 'Vertical Position [mm]', 'Intensity at ' + str(wfr2.mesh.eStart) + ' eV'])
+# TODO: check correctness of H and V (I think is OK)
+arI2xx = numpy.array(arI2)
+arI2xx = arI2xx.reshape((wfr2.mesh.ny,wfr2.mesh.nx)).T
+plot_image(arI2xx, numpy.linspace(1000*wfr2.mesh.xStart, 1000*wfr2.mesh.xFin, wfr2.mesh.nx), numpy.linspace(1000*wfr2.mesh.yStart, 1000*wfr2.mesh.yFin, wfr2.mesh.ny), xtitle='Horizontal Position [mm]', ytitle='Vertical Position [mm]', title='Intensity at ' + str(wfr2.mesh.eStart) + ' eV',show=False)
 
 arI2x = array('f', [0]*wfr2.mesh.nx) #array to take 1D intensity data (vs X)
 srwl.CalcIntFromElecField(arI2x, wfr2, 6, 0, 1, wfr2.mesh.eStart, 0, 0)
-uti_plot1d(arI2x, [1000*wfr2.mesh.xStart, 1000*wfr2.mesh.xFin, wfr2.mesh.nx], ['Horizontal Position [mm]', 'Intensity [ph/s/.1%bw/mm^2]', 'Intensity at ' + str(wfr2.mesh.eStart) + ' eV\n(horizontal cut at x = 0)'])
+
+# uti_plot1d(arI2x, [1000*wfr2.mesh.xStart, 1000*wfr2.mesh.xFin, wfr2.mesh.nx], ['Horizontal Position [mm]', 'Intensity [ph/s/.1%bw/mm^2]', 'Intensity at ' + str(wfr2.mesh.eStart) + ' eV\n(horizontal cut at x = 0)'])
+plot( numpy.linspace(1000*wfr2.mesh.xStart, 1000*wfr2.mesh.xFin, wfr2.mesh.nx), arI2x, xtitle='Horizontal Position [mm]', ytitle='Intensity [ph/s/.1%bw/mm^2]', title='Intensity at ' + str(wfr2.mesh.eStart) + ' eV\n(horizontal cut at x = 0)',show=False) 
 
 arI2y = array('f', [0]*wfr2.mesh.ny) #array to take 1D intensity data (vs Y)
 srwl.CalcIntFromElecField(arI2y, wfr2, 6, 0, 2, wfr2.mesh.eStart, 0, 0)
-uti_plot1d(arI2y, [1000*wfr2.mesh.yStart, 1000*wfr2.mesh.yFin, wfr2.mesh.ny], ['Vertical Position [mm]', 'Intensity [ph/s/.1%bw/mm^2]', 'Intensity at ' + str(wfr2.mesh.eStart) + ' eV\n(vertical cut at y = 0)'])
-    
-uti_plot_show() #show all graphs (and block execution)
+
+# uti_plot1d(arI2y, [1000*wfr2.mesh.yStart, 1000*wfr2.mesh.yFin, wfr2.mesh.ny], ['Vertical Position [mm]', 'Intensity [ph/s/.1%bw/mm^2]', 'Intensity at ' + str(wfr2.mesh.eStart) + ' eV\n(vertical cut at y = 0)'])
+plot( numpy.linspace(1000*wfr2.mesh.yStart, 1000*wfr2.mesh.yFin, wfr2.mesh.ny), arI2y, xtitle='Vertical Position [mm]', ytitle='Intensity [ph/s/.1%bw/mm^2]', title='Intensity at ' + str(wfr2.mesh.eStart) + ' eV\n(vertical cut at y = 0)',show=True) 
+
+# uti_plot_show() #show all graphs (and block execution)
 print('done')
 

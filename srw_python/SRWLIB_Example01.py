@@ -125,8 +125,12 @@ for i in range(partTraj.np):
     partTraj.arX[i] *= 1000
     partTraj.arY[i] *= 1000
     
-uti_plot1d(partTraj.arX, ctMesh, ['ct [m]', 'Horizontal Position [mm]'])
-uti_plot1d(partTraj.arY, ctMesh, ['ct [m]', 'Vertical Position [mm]'])
+from srxraylib.plot.gol import plot
+import numpy
+# uti_plot1d(partTraj.arX, ctMesh, ['ct [m]', 'Horizontal Position [mm]'])
+# uti_plot1d(partTraj.arY, ctMesh, ['ct [m]', 'Vertical Position [mm]'])
+plot( numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2]), partTraj.arX, xtitle='ct [m]', ytitle='Horizontal Position [mm]',show=False)
+plot( numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2]), partTraj.arY, xtitle='ct [m]', ytitle='Vertical Position [mm]',show=True)
 
-uti_plot_show() #show all graphs (and block execution)
+#uti_plot_show() #show all graphs (and block execution)
 print('done')

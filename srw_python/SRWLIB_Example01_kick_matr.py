@@ -199,9 +199,18 @@ for i in range(partTraj.np): #converting from [m] to [mm] and from [rad] to [mra
     partTraj.arY[i] *= 1000
     partTraj.arYp[i] *= 1000
 
-uti_plot1d(partTraj.arX, ctMesh, ['ct [m]', 'Horizontal Position [m]m'])
-uti_plot1d(partTraj.arXp, ctMesh, ['ct [m]', 'Horizontal Angle [mrad]'])
-uti_plot1d(partTraj.arY, ctMesh, ['ct [m]', 'Vertical Position [mm]'])
-uti_plot1d(partTraj.arYp, ctMesh, ['ct [m]', 'Vertical Angle [mrad]'])
-uti_plot_show()
+# uti_plot1d(partTraj.arX, ctMesh, ['ct [m]', 'Horizontal Position [m]m'])
+# uti_plot1d(partTraj.arXp, ctMesh, ['ct [m]', 'Horizontal Angle [mrad]'])
+# uti_plot1d(partTraj.arY, ctMesh, ['ct [m]', 'Vertical Position [mm]'])
+# uti_plot1d(partTraj.arYp, ctMesh, ['ct [m]', 'Vertical Angle [mrad]'])
+# uti_plot_show()
+# 
+
+from srxraylib.plot.gol import plot
+import numpy
+plot( numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2]), partTraj.arX, xtitle='ct [m]', ytitle='Horizontal Position [mm]',show=False)
+plot( numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2]), partTraj.arXp, xtitle='ct [m]', ytitle='Horizontal Angle [mrad]',show=False)
+plot( numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2]), partTraj.arY, xtitle='ct [m]', ytitle='Vertical Position [mm]',show=False)
+plot( numpy.linspace(ctMesh[0],ctMesh[1],ctMesh[2]), partTraj.arYp, xtitle='ct [m]', ytitle='Vertical angle [mrad]',show=True)
+
 print('done')
