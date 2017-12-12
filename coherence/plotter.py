@@ -3,7 +3,18 @@ import numpy
 import sys
 
 from srxraylib.util.data_structures import ScaledMatrix, ScaledArray
-from silx.gui.plot import Plot2D, ImageView
+# from silx.gui.plot import Plot2D, ImageView
+
+import h5py
+
+from scipy.interpolate import RectBivariateSpline
+from PyQt5.QtWidgets import QApplication
+
+# try:
+#     import matplotlib.pylab as plt
+#     plt.switch_backend("Qt5Agg")
+# except:
+#     raise Exception("Failed to set matplotlib backend to Qt5Agg")
 
 # copied from SRW's uti_plot_com and slightly  modified (no _enum)
 def file_load(_fname, _read_labels=1):
@@ -125,6 +136,10 @@ def plot_2D(x, y, data, title, xlabel="X [um]", ylabel="Y [um]"):
 def plot_scaled_matrix(scaled_matrix, title, xlabel="X [um]", ylabel="Y [um]"):
     plot_2D(scaled_matrix.get_x_values(), scaled_matrix.get_y_values(), scaled_matrix.get_z_values(), title, xlabel, ylabel)
 
+def plot_scaled_matrix_srio(z, x, y, title, xlabel="X [um]", ylabel="Y [um]"):
+    from srxraylib.plot.gol import plot_image
+    print(">>>>>>>>>>>",z.shape,x.shape,y.shape)
+    plot_image(z, x, y, title=title, xtitle=xlabel, ytitle=ylabel)
 
 def srwUtiNonZeroIntervB(p, pmin, pmax):
     if((p < pmin) or (p > pmax)):
@@ -171,6 +186,12 @@ def showDegCoh(filename, rel_thresh=1e-4):
     coor, coor_conj, mutual_intensity = loadNumpyFormatCoh(filename)
 
     print("File Loaded")
+
+    f = h5py.File("tmp0.h5",'w')
+    f["0_coor"] = coor
+    f["0_coor_conj"] = coor_conj
+    f["0_mutual_intensity"] = mutual_intensity
+    # f["0_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
 
     #-----------------------------------------------------------
     #FROM OLEG'S IGOR MACRO ------------------------------------
@@ -223,6 +244,14 @@ def showDegCoh(filename, rel_thresh=1e-4):
 
     print("Done")
 
+
+
+    f["1_x"] = wInMutCohRes.get_x_values()
+    f["1_y"] = wInMutCohRes.get_y_values()
+    f["1_z"] = wInMutCohRes.get_z_values()
+    f["1_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
+
+
     print("Creating Matrix wMutCohNonRot")
 
     wMutCohNonRot = ScaledMatrix(x_coord=nmInMutInt.get_x_values(),
@@ -246,6 +275,15 @@ def showDegCoh(filename, rel_thresh=1e-4):
     wMutCohNonRot.compute_interpolator()
 
     print("Done")
+
+
+    f["2_x"] = wMutCohNonRot.get_x_values()
+    f["2_y"] = wMutCohNonRot.get_y_values()
+    f["2_z"] = wMutCohNonRot.get_z_values()
+
+
+
+
     print("Creating Matrix nmResDegCoh")
 
     nmResDegCoh = ScaledMatrix(x_coord=nmInMutInt.get_x_values(),
@@ -282,6 +320,15 @@ def showDegCoh(filename, rel_thresh=1e-4):
 
     print("Done: plotting Results")
 
+
+    f["3_x"] = nmResDegCoh.get_x_values()
+    f["3_y"] = nmResDegCoh.get_y_values()
+    f["3_z"] = nmResDegCoh.get_z_values()
+    f["3_mesh"] = [xmin, xmax, inx, ymin, ymax, iny]
+    f.close()
+    print("File tmp0.h5 written to disk.")
+
+
     if filename.endswith("1"):
         xlabel = "(x1+x2)/2 [um]"
         ylabel = "(x1-x2)/2 [um]"
@@ -291,17 +338,156 @@ def showDegCoh(filename, rel_thresh=1e-4):
 
     plot_scaled_matrix(nmResDegCoh, "nmResDegCoh", xlabel, ylabel)
 
-from PyQt5.QtWidgets import QApplication
+def srio_get_from_h5_file(filename,a1=None,a2=None,a3=None):
+    f = h5py.File(filename,'r')
+
+    out = []
+    if a1 is not None:
+        out.append(f[a1].value)
+    if a2 is not None:
+        out.append(f[a2].value)
+    if a3 is not None:
+        out.append(f[a3].value)
+    return out
+
+def calculate_degree_of_coherence_vs_average_and_difference(coor, coor_conj, mutual_intensity,dump_h5_file=True):
+
+    print(coor.shape, coor_conj.shape, mutual_intensity.shape )
+
+
+    #
+    if dump_h5_file:
+        f = h5py.File("tmp1.h5",'w')
+        f["0_coor"] = coor
+        f["0_coor_conj"] = coor_conj
+        f["0_mutual_intensity"] = mutual_intensity
+
+
+    # extending the mutual coherence (padding)
+
+    xStart = coor[0]
+    xNp = coor.size
+    xStep = coor[1] - coor[0]
+    xEnd = xStart + (xNp - 1)*xStep
+
+    yStart = coor_conj[0]
+    yNp =  coor_conj.size
+    yStep = coor_conj[1] - coor_conj[0]
+    yEnd = yStart + (yNp - 1)*yStep
+
+    xNpNew = 2*xNp - 1
+    yNpNew = 2*yNp - 1
+    #
+    # print("Creating Matrix wInMutCohRes")
+
+    xHalfNp = round(xNp*0.5)
+    yHalfNp = round(yNp*0.5)
+
+    x0 = (xStart - xHalfNp*xStep)
+    wInMutCohRes_x = numpy.arange(x0,x0+xNpNew*xStep,xStep)
+    y0 = (yStart - yHalfNp*yStep)
+    wInMutCohRes_y = numpy.arange(y0,y0+yNpNew*yStep,yStep)
+
+    print("Padding X to: ",wInMutCohRes_x.size,int( 0.5*(wInMutCohRes_x.size-coor.size)),  wInMutCohRes_x.size-int( 0.5*(wInMutCohRes_x.size-coor.size))-coor.size)
+    print("Padding Y to: ",wInMutCohRes_y.size,int( 0.5*(wInMutCohRes_y.size-coor.size)),  wInMutCohRes_y.size-int( 0.5*(wInMutCohRes_y.size-coor.size))-coor_conj.size)
+
+
+    pad = ((int( 0.5*(wInMutCohRes_x.size-coor.size)),  wInMutCohRes_x.size-int( 0.5*(wInMutCohRes_x.size-coor.size))-coor.size),
+            (int( 0.5*(wInMutCohRes_y.size-coor.size)),  wInMutCohRes_y.size-int( 0.5*(wInMutCohRes_y.size-coor.size))-coor_conj.size))
+
+
+    wInMutCohRes_z = numpy.pad(mutual_intensity,pad,mode='constant')
+
+
+    # print("Done")
+    if dump_h5_file:
+        f["1_x"] = wInMutCohRes_x
+        f["1_y"] = wInMutCohRes_y
+        f["1_z"] = wInMutCohRes_z
+        f["1_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
+
+
+    # calculate degree of coherence by interpolation TODO: really needed?
+    interpolator1 = RectBivariateSpline(wInMutCohRes_x, wInMutCohRes_y, wInMutCohRes_z, bbox=[None, None, None, None], kx=3, ky=3, s=0)
+
+    wMutCohNonRot_x = coor
+    wMutCohNonRot_y = coor_conj
+
+    intX = numpy.zeros_like(wMutCohNonRot_x)
+    intY = numpy.zeros_like(wMutCohNonRot_y)
+
+    for ix,vx in enumerate(wMutCohNonRot_x):
+        intX[ix] = interpolator1(vx,vx,grid=False)
+
+    for iy,vy in enumerate(wMutCohNonRot_y):
+        intY[iy] = interpolator1(vy,vy,grid=False)
+
+    wMutCohNonRot_z = numpy.abs(interpolator1(wMutCohNonRot_x,wMutCohNonRot_y,grid=True)) / numpy.sqrt( numpy.abs(numpy.outer(intX,intY)))
+
+
+    print(">>>>",wMutCohNonRot_z.shape)
+    #
+    #
+    if dump_h5_file:
+        f["2_x"] = wMutCohNonRot_x
+        f["2_y"] = wMutCohNonRot_y
+        f["2_z"] = wMutCohNonRot_z
+
+    interpolator2 = RectBivariateSpline(wMutCohNonRot_x, wMutCohNonRot_y, wMutCohNonRot_z, bbox=[None, None, None, None], kx=3, ky=3, s=0)
+
+    # calculate the "rotated" degree of coherence vs x1+x2 and x1-x2
+
+
+    nmResDegCoh_x = coor
+    nmResDegCoh_y = coor_conj
+
+    X = numpy.outer(nmResDegCoh_x,numpy.ones_like(nmResDegCoh_x))
+    Y = numpy.outer(numpy.ones_like(nmResDegCoh_y),nmResDegCoh_y)
+    nmResDegCoh_z = interpolator2( X+Y,X-Y, grid=False)
+
+    if dump_h5_file:
+        f["3_x"] = nmResDegCoh_x
+        f["3_y"] = nmResDegCoh_y
+        f["3_z"] = nmResDegCoh_z
+
+        f.close()
+        print("File tmp1.h5 written to disk.")
+
+    return nmResDegCoh_x,nmResDegCoh_y,nmResDegCoh_z
+
+
+def showDegCoh_srio(filename, rel_thresh=1e-4, direction='y'):
+    print(">>>>>>")
+    print("FILE: " + filename)
+
+    coor, coor_conj, mutual_intensity  = srio_get_from_h5_file("tmp0.h5","0_coor", "0_coor_conj", "0_mutual_intensity")
+
+    print(coor.shape, coor_conj.shape, mutual_intensity.shape )
+
+    nmResDegCoh_x, nmResDegCoh_y, nmResDegCoh_z = calculate_degree_of_coherence_vs_average_and_difference(coor,coor_conj,mutual_intensity)
+
+    # plot
+    if direction == 'x':
+        xlabel = "(x1+x2)/2 [um]"
+        ylabel = "(x1-x2)/2 [um]"
+    elif direction == 'y':
+        xlabel = "(y1+y2)/2 [um]"
+        ylabel = "(y1-y2)/2 [um]"
+
+    plot_scaled_matrix_srio(nmResDegCoh_z, nmResDegCoh_x, nmResDegCoh_y, "nmResDegCoh", xlabel, ylabel)
+
+
 
 if __name__== "__main__":
-    filename = sys.argv[1]
+    filename = "/users/srio/OASYS1/srw-scripts/coherence/esrf_TE_50k_d0_ME_AP_CrossSpectralDensity_vertical_cut_noErr.dat" # sys.argv[1]
 
-    app = QApplication(sys.argv)
+    # app = QApplication(sys.argv)
 
-    if filename.endswith(".dat"):
-        showPlot(filename)
-    else:
-        showDegCoh(filename)
+    # if filename.endswith(".dat"):
+    #     showPlot(filename)
+    # else:
+    showDegCoh(filename)
+    showDegCoh_srio(filename,direction='y')
 
-    app.exec()
+    # app.exec()
 
