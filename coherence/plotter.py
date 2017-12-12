@@ -3,7 +3,7 @@ import numpy
 import sys
 
 from srxraylib.util.data_structures import ScaledMatrix, ScaledArray
-# from silx.gui.plot import Plot2D, ImageView
+from silx.gui.plot import Plot2D, ImageView
 
 import h5py
 
@@ -137,9 +137,11 @@ def plot_scaled_matrix(scaled_matrix, title, xlabel="X [um]", ylabel="Y [um]"):
     plot_2D(scaled_matrix.get_x_values(), scaled_matrix.get_y_values(), scaled_matrix.get_z_values(), title, xlabel, ylabel)
 
 def plot_scaled_matrix_srio(z, x, y, title, xlabel="X [um]", ylabel="Y [um]"):
-    from srxraylib.plot.gol import plot_image
-    print(">>>>>>>>>>>",z.shape,x.shape,y.shape)
-    plot_image(z, x, y, title=title, xtitle=xlabel, ytitle=ylabel)
+    # from srxraylib.plot.gol import plot_image
+    # print(">>>>>>>>>>>",z.shape,x.shape,y.shape)
+    # plot_image(z, x, y, title=title, xtitle=xlabel, ytitle=ylabel)
+    plot_2D(x, y, z, title, xlabel, ylabel)
+
 
 def srwUtiNonZeroIntervB(p, pmin, pmax):
     if((p < pmin) or (p > pmax)):
@@ -481,13 +483,13 @@ def showDegCoh_srio(filename, rel_thresh=1e-4, direction='y'):
 if __name__== "__main__":
     filename = "/users/srio/OASYS1/srw-scripts/coherence/esrf_TE_50k_d0_ME_AP_CrossSpectralDensity_vertical_cut_noErr.dat" # sys.argv[1]
 
-    # app = QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
     # if filename.endswith(".dat"):
     #     showPlot(filename)
     # else:
-    showDegCoh(filename)
+    #showDegCoh(filename)
     showDegCoh_srio(filename,direction='y')
 
-    # app.exec()
+    app.exec()
 
