@@ -181,7 +181,7 @@ def showPlot(filename):
     plot_2D(coor, coor_conj, inten, filename)
 
 
-def showDegCoh(filename, rel_thresh=1e-4):
+def showDegCoh(filename, file_h5=None, rel_thresh=1e-4):
     print(">>>>>>")
     print("FILE: " + filename)
 
@@ -189,11 +189,12 @@ def showDegCoh(filename, rel_thresh=1e-4):
 
     print("File Loaded")
 
-    f = h5py.File("tmp0.h5",'w')
-    f["0_coor"] = coor
-    f["0_coor_conj"] = coor_conj
-    f["0_mutual_intensity"] = mutual_intensity
-    # f["0_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
+    if file_h5 is not None:
+        f = h5py.File(file_h5,'w')
+        f["0_coor"] = coor
+        f["0_coor_conj"] = coor_conj
+        f["0_mutual_intensity"] = mutual_intensity
+        # f["0_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
 
     #-----------------------------------------------------------
     #FROM OLEG'S IGOR MACRO ------------------------------------
@@ -247,11 +248,11 @@ def showDegCoh(filename, rel_thresh=1e-4):
     print("Done")
 
 
-
-    f["1_x"] = wInMutCohRes.get_x_values()
-    f["1_y"] = wInMutCohRes.get_y_values()
-    f["1_z"] = wInMutCohRes.get_z_values()
-    # f["1_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
+    if file_h5 is not None:
+        f["1_x"] = wInMutCohRes.get_x_values()
+        f["1_y"] = wInMutCohRes.get_y_values()
+        f["1_z"] = wInMutCohRes.get_z_values()
+        # f["1_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
 
 
     print("Creating Matrix wMutCohNonRot")
@@ -278,10 +279,10 @@ def showDegCoh(filename, rel_thresh=1e-4):
 
     print("Done")
 
-
-    f["2_x"] = wMutCohNonRot.get_x_values()
-    f["2_y"] = wMutCohNonRot.get_y_values()
-    f["2_z"] = wMutCohNonRot.get_z_values()
+    if file_h5 is not None:
+        f["2_x"] = wMutCohNonRot.get_x_values()
+        f["2_y"] = wMutCohNonRot.get_y_values()
+        f["2_z"] = wMutCohNonRot.get_z_values()
 
 
 
@@ -323,12 +324,13 @@ def showDegCoh(filename, rel_thresh=1e-4):
     print("Done: plotting Results")
 
 
-    f["3_x"] = nmResDegCoh.get_x_values()
-    f["3_y"] = nmResDegCoh.get_y_values()
-    f["3_z"] = nmResDegCoh.get_z_values()
-    # f["3_mesh"] = [xmin, xmax, inx, ymin, ymax, iny]
-    f.close()
-    print("File tmp0.h5 written to disk.")
+    if file_h5 is not None:
+        f["3_x"] = nmResDegCoh.get_x_values()
+        f["3_y"] = nmResDegCoh.get_y_values()
+        f["3_z"] = nmResDegCoh.get_z_values()
+        # f["3_mesh"] = [xmin, xmax, inx, ymin, ymax, iny]
+        f.close()
+        print("File %s written to disk."%file_h5)
 
 
     if filename.endswith("1"):
@@ -345,136 +347,109 @@ def showDegCoh(filename, rel_thresh=1e-4):
 # new routines...
 #
 
-def calculate_degree_of_coherence_vs_average_and_difference(coor, coor_conj, mutual_intensity,dump_h5_file=True):
+def calculate_degree_of_coherence_vs_sum_and_difference(coor, coor_conj, mutual_intensity, set_extrapolated_to_zero=True, filename=None):
+    """
+    Calculates the modulus of the complex degree of coherence versus coordinates x1+x2 and x1-x2
+        (or y1+y2 and y1-y2)
 
-    print(coor.shape, coor_conj.shape, mutual_intensity.shape )
-
+    :param coor: the x1 or y1 coordinate
+    :param coor_conj: the x2 or y2 coordinate
+    :param mutual_intensity: the mutual intensity vs (x1,x2) [or y2,y3]
+    :param filename: Name of output hdf5 filename (optional, default=None, no output file)
+    :return: x1,x2,DOC
+    """
 
     #
-    if dump_h5_file:
-        f = h5py.File("tmp1.h5",'w')
+    if filename is not None:
+        f = h5py.File(filename,'w')
         f["0_coor"] = coor
         f["0_coor_conj"] = coor_conj
         f["0_mutual_intensity"] = mutual_intensity
 
     interpolator0 = RectBivariateSpline(coor, coor_conj, mutual_intensity, bbox=[None, None, None, None], kx=3, ky=3, s=0)
 
-    # # extending the mutual coherence (padding)
-    #
-    # xStart = coor[0]
-    # xNp = coor.size
-    # xStep = coor[1] - coor[0]
-    # xEnd = xStart + (xNp - 1)*xStep
-    #
-    # yStart = coor_conj[0]
-    # yNp =  coor_conj.size
-    # yStep = coor_conj[1] - coor_conj[0]
-    # yEnd = yStart + (yNp - 1)*yStep
-    #
-    # xNpNew = 2*xNp - 1
-    # yNpNew = 2*yNp - 1
-    # #
-    # # print("Creating Matrix wInMutCohRes")
-    #
-    # xHalfNp = round(xNp*0.5)
-    # yHalfNp = round(yNp*0.5)
-    #
-    # x0 = (xStart - xHalfNp*xStep)
-    # wInMutCohRes_x = numpy.arange(x0,x0+xNpNew*xStep,xStep)
-    # y0 = (yStart - yHalfNp*yStep)
-    # wInMutCohRes_y = numpy.arange(y0,y0+yNpNew*yStep,yStep)
-    #
-    # print("Padding X to: ",wInMutCohRes_x.size,int( 0.5*(wInMutCohRes_x.size-coor.size)),  wInMutCohRes_x.size-int( 0.5*(wInMutCohRes_x.size-coor.size))-coor.size)
-    # print("Padding Y to: ",wInMutCohRes_y.size,int( 0.5*(wInMutCohRes_y.size-coor.size)),  wInMutCohRes_y.size-int( 0.5*(wInMutCohRes_y.size-coor.size))-coor_conj.size)
-    #
-    #
-    # pad = ((int( 0.5*(wInMutCohRes_x.size-coor.size)),  wInMutCohRes_x.size-int( 0.5*(wInMutCohRes_x.size-coor.size))-coor.size),
-    #         (int( 0.5*(wInMutCohRes_y.size-coor.size)),  wInMutCohRes_y.size-int( 0.5*(wInMutCohRes_y.size-coor.size))-coor_conj.size))
-    #
-    #
-    # wInMutCohRes_z = numpy.pad(mutual_intensity,pad,mode='constant')
-    #
-    #
-    # # print("Done")
-    # if dump_h5_file:
-    #     f["1_x"] = wInMutCohRes_x
-    #     f["1_y"] = wInMutCohRes_y
-    #     f["1_z"] = wInMutCohRes_z
-    #     # f["1_mesh"] = [xStart, xEnd, xNpNew, yStart, yEnd, yNpNew]
-    #
-    #
-    # # calculate degree of coherence by interpolation TODO: really needed?
-    # interpolator1 = RectBivariateSpline(wInMutCohRes_x, wInMutCohRes_y, wInMutCohRes_z, bbox=[None, None, None, None], kx=3, ky=3, s=0)
-    #
-    # wMutCohNonRot_x = coor
-    # wMutCohNonRot_y = coor_conj
-    #
-    # intX = numpy.zeros_like(wMutCohNonRot_x)
-    # intY = numpy.zeros_like(wMutCohNonRot_y)
-    #
-    # for ix,vx in enumerate(wMutCohNonRot_x):
-    #     intX[ix] = interpolator1(vx,vx,grid=False)
-    #
-    # for iy,vy in enumerate(wMutCohNonRot_y):
-    #     intY[iy] = interpolator1(vy,vy,grid=False)
-    #
-    # wMutCohNonRot_z = numpy.abs(interpolator1(wMutCohNonRot_x,wMutCohNonRot_y,grid=True)) / numpy.sqrt( numpy.abs(numpy.outer(intX,intY)))
-    #
-    #
-    # print(">>>>",wMutCohNonRot_z.shape)
-    # #
-    # #
-    # if dump_h5_file:
-    #     f["2_x"] = wMutCohNonRot_x
-    #     f["2_y"] = wMutCohNonRot_y
-    #     f["2_z"] = wMutCohNonRot_z
-    #
-    # interpolator2 = RectBivariateSpline(wMutCohNonRot_x, wMutCohNonRot_y, wMutCohNonRot_z, bbox=[None, None, None, None], kx=3, ky=3, s=0)
-
-    # calculate the "rotated" degree of coherence vs x1+x2 and x1-x2
-
-
-    nmResDegCoh_x = coor
-    nmResDegCoh_y = coor_conj
-
-    X = numpy.outer(nmResDegCoh_x,numpy.ones_like(nmResDegCoh_y))
-    Y = numpy.outer(numpy.ones_like(nmResDegCoh_x),nmResDegCoh_y)
-
-    # nmResDegCoh_z = interpolator2( X+Y,X-Y, grid=False)
+    X = numpy.outer(coor,numpy.ones_like(coor_conj))
+    Y = numpy.outer(numpy.ones_like(coor),coor_conj)
 
     nmResDegCoh_z = numpy.abs(interpolator0( X+Y,X-Y, grid=False)) /\
                 numpy.sqrt(numpy.abs(interpolator0( X+Y,X+Y, grid=False))) /\
                 numpy.sqrt(numpy.abs(interpolator0( X-Y,X-Y, grid=False)))
 
-    if dump_h5_file:
-        f["3_x"] = nmResDegCoh_x
-        f["3_y"] = nmResDegCoh_y
+    if set_extrapolated_to_zero:
+        nx,ny = nmResDegCoh_z.shape
+
+        idx = numpy.outer(numpy.arange(nx),numpy.ones((ny)))
+        idy = numpy.outer(numpy.ones((nx)),numpy.arange(ny))
+
+        mask = numpy.ones_like(idx)
+
+        bad = numpy.where(idy < 1.*(idx-nx/2)*ny/nx)
+        mask[ bad ] = 0
+
+        bad = numpy.where(idy > ny - 1.*(idx-nx/2)*ny/nx)
+        mask[ bad ] = 0
+
+        bad = numpy.where(idy < 0.5*ny - 1.*idx*ny/nx)
+        mask[ bad ] = 0
+
+        bad = numpy.where(idy > 0.5*ny + 1.*idx*ny/nx)
+        mask[ bad ] = 0
+
+        nmResDegCoh_z *= mask
+
+
+    if filename is not None:
+        f["3_x"] = coor
+        f["3_y"] = coor_conj
         f["3_z"] = nmResDegCoh_z
 
         f.close()
-        print("File tmp1.h5 written to disk.")
+        print("File %s written to disk."%filename)
 
-    return nmResDegCoh_x,nmResDegCoh_y,nmResDegCoh_z
+    return coor,coor_conj,nmResDegCoh_z
 
 
-def showDegCoh_srio(filename, rel_thresh=1e-4, direction='y',do_plot=True):
+def showDegCoh_srio(filename_in, filename_out, rel_thresh=1e-4, direction='y',do_plot=True):
 
-    coor, coor_conj, mutual_intensity  = srio_get_from_h5_file(filename,"0_coor", "0_coor_conj", "0_mutual_intensity")
+    coor, coor_conj, mutual_intensity  = srio_get_from_h5_file(filename_in,"0_coor", "0_coor_conj", "0_mutual_intensity")
 
-    x, y, z = calculate_degree_of_coherence_vs_average_and_difference(coor,coor_conj,mutual_intensity)
+    x, y, z = calculate_degree_of_coherence_vs_sum_and_difference(coor,coor_conj,mutual_intensity,filename=filename_out)
 
     if do_plot:
         if direction == 'x':
-            xlabel = "(x1+x2)/2 [um]"
-            ylabel = "(x1-x2)/2 [um]"
+            xlabel = "(x1+x2) [um]"
+            ylabel = "(x1-x2) [um]"
         elif direction == 'y':
-            xlabel = "(y1+y2)/2 [um]"
-            ylabel = "(y1-y2)/2 [um]"
+            xlabel = "(y1+y2) [um]"
+            ylabel = "(y1-y2) [um]"
 
         plot_scaled_matrix_srio(z, x, y, "nmResDegCoh", xlabel, ylabel)
 
+
+def coherent_length_from_file(filein):
+
+    x,y,z = srio_get_from_h5_file(filein,"3_x","3_y","3_z")
+    #
+    # calculate coherent length
+    #
+    nx = z.shape[0]
+    h = z[int(nx/2),:]
+    tt = numpy.where(h>=max(h)*0.5)
+    tt0 = 0
+    tt1 = -1
+    if h[tt].size > 1:
+      binSize = y[1]-y[0]
+      print('fwhm', binSize*(tt[tt0][tt1]-tt[tt0][tt0]))
+      print('fwhm_coordinates', (y[tt[tt0][tt0]],y[tt[tt0][tt1]]))
+
+    # from srxraylib.plot.gol import plot
+    # plot(y,h,show=1)
+    # plot(y,numpy.gradient(h),title="derivative",show=0)
+    # plot(y,numpy.gradient(numpy.gradient(h)),title="second derivative")
+
+
 def compare_files(filenew,fileold):
-    from numpy.testing import assert_almost_equal
+    # from numpy.testing import assert_almost_equal
     fnew = h5py.File(filenew,'r')
     fold = h5py.File(fileold,'r')
 
@@ -511,17 +486,29 @@ if __name__== "__main__":
 
     app = QApplication(sys.argv)
 
-    # this is the old calculation - redo it once for creatinh tmp0.h5
+    #
+    # this is the old calculation - redo it once for creating tmp0.h5 that will be used for data input and comparison of results
+    #
+
     # filename = "/users/srio/OASYS1/srw-scripts/coherence/esrf_TE_50k_d0_ME_AP_CrossSpectralDensity_vertical_cut_noErr.dat" # sys.argv[1]
-    # showDegCoh(filename)
+    # showDegCoh(filename,file_h5="tmp0.h5")
+
+    # filename = "/tmp_14_days/celestre/cross_spectral_files/ebs_TE_50k_d0_ME_AP_CrossSpectralDensity_horizontal_noErr.dat"
+    # showDegCoh(filename,file_h5="tmp00.h5")
 
     # if filename.endswith(".dat"):
     #     showPlot(filename)
     # else:
     #     showDegCoh(filename)
 
-    showDegCoh_srio("tmp0.h5",direction='y',do_plot=True)
-    compare_files("tmp1.h5","tmp0.h5")
-    # plot_from_file("tmp0.h5")
-    app.exec()
+    #
+    # new calculation
+    #
+
+
+    showDegCoh_srio(filename_in="tmp00.h5",filename_out="tmp11.h5",direction='y',do_plot=True)
+    # compare_files("tmp1.h5","tmp0.h5")
+    # plot_from_file("tmp00.h5")
+    # coherent_length_from_file("tmp00.h5")
+    # app.exec()
 
