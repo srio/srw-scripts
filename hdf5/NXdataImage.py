@@ -17,6 +17,11 @@ timestamp = "2010-10-18T17:17:04-0500"
 data = numpy.arange(100000.)
 data.shape = 100, 1000
 
+data0 = numpy.arange(100)
+data1 = numpy.arange(1000)
+data = numpy.outer(data0,data1)
+print(">>>>",data.shape)
+
 # create the HDF5 NeXus file
 f = h5py.File(fileName, "w")
 # point to the default data to be plotted
@@ -54,6 +59,51 @@ ds.attrs['long_name'] = 'Pixel Size (microns)'    # suggested X axis plot label
 ds = nxdata.create_dataset('axis0_name', data=numpy.arange(data.shape[0])-0.5*int(data.shape[0]))
 ds.attrs['units'] = 'microns'
 ds.attrs['long_name'] = 'Pixel Size (microns)'    # suggested Y axis plot label
+
+
+# create the NXentry group ------------------------------ TRANSPOSED
+nxdata = nxentry.create_group('image_plotT')
+nxdata.attrs['NX_class'] = 'NXdata'
+nxdata.attrs['signal'] = 'image_data'              # Y axis of default plot
+nxdata.attrs['axes'] = [b'axis0_name', b'axis1_name'] # X axis of default plot
+
+# signal data
+ds = nxdata.create_dataset('image_data', data=data.T)
+ds.attrs['interpretation'] = 'image'
+
+# X axis data
+ds = nxdata.create_dataset('axis1_name', data=numpy.arange(data.T.shape[1])-0.5*int(data.T.shape[1]))
+ds.attrs['units'] = 'microns'
+ds.attrs['long_name'] = 'Pixel Size (microns)'    # suggested X axis plot label
+
+# Y axis data
+ds = nxdata.create_dataset('axis0_name', data=numpy.arange(data.T.shape[0])-0.5*int(data.T.shape[0]))
+ds.attrs['units'] = 'microns'
+ds.attrs['long_name'] = 'Pixel Size (microns)'    # suggested Y axis plot label
+
+
+# create the NXentry group ----------------------------------ROTATED
+nxdata = nxentry.create_group('image_plotR')
+nxdata.attrs['NX_class'] = 'NXdata'
+nxdata.attrs['signal'] = 'image_data'              # Y axis of default plot
+nxdata.attrs['axes'] = [b'axis0_name', b'axis1_name'] # X axis of default plot
+
+# signal data
+data = numpy.rot90(data.copy())
+ds = nxdata.create_dataset('image_data', data=data)
+ds.attrs['interpretation'] = 'image'
+
+# X axis data
+ds = nxdata.create_dataset('axis1_name', data=numpy.arange(data.shape[1])-0.5*int(data.shape[1]))
+ds.attrs['units'] = 'microns'
+ds.attrs['long_name'] = 'Pixel Size (microns)'    # suggested X axis plot label
+
+# Y axis data
+ds = nxdata.create_dataset('axis0_name', data=numpy.arange(data.shape[0])-0.5*int(data.shape[0]))
+ds.attrs['units'] = 'microns'
+ds.attrs['long_name'] = 'Pixel Size (microns)'    # suggested Y axis plot label
+
+
 
 f.close()   # be CERTAIN to close the file
 
