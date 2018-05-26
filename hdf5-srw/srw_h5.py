@@ -29,34 +29,17 @@ SOFTWARE.
 """
 #############################################################################
 from __future__ import print_function #Python 2.7 compatibility
+
 from srwlib import *
-from uti_math import*
-from array import *
+# from uti_math import*
+# from array import *
 import time
 import sys
 import os
 
-from NumpyToSRW import numpyArrayToSRWArray
+import h5py
+import numpy
 
-try:
-    import h5py
-    has_h5py = True
-except:
-    print("h5py is not installed")
-    has_h5py = False
-
-try:
-    import numpy
-    has_numpy = True
-except:
-    print("NumPy is not installed")
-    has_numpy = False
-
-# ****************************************************************************
-# ****************************************************************************
-# **********************Auxiliary data storage functions
-# ****************************************************************************
-# ****************************************************************************
 
 def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_intensity=False,_amplitude=False,_phase=False,_overwrite=True):
     """
@@ -124,9 +107,9 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
     if (_complex_amplitude) or (_intensity):
         print(dir(_wfr))
         print(">>>>>>>> writing complex amplitude or intensity...",_wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)
-        x_polarization = _SRW_2_Numpy(_wfr.arEx, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # sigma
+        x_polarization = _SRWArrayToNumpy(_wfr.arEx, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # sigma
         print(">>>>>>>> writing complex amplitude or intensity 1...")
-        y_polarization = _SRW_2_Numpy(_wfr.arEy, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # pi
+        y_polarization = _SRWArrayToNumpy(_wfr.arEy, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # pi
 
         e_field = numpy.concatenate((x_polarization, y_polarization), 3)
 
@@ -195,134 +178,10 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
     FileName = _filename.split("/")
     print(">>>> save_wfr_2_hdf5: file written/updated %s" %FileName[-1])
 
-
-
-    # try:
-    #     if not os.path.isfile(_filename):  # if file doesn't exist, create it.
-    #         sys.stdout.flush()
-    #         f = h5py.File(_filename, 'w')
-    #         # points to the default data to be plotted
-    #         f.attrs['default']          = 'entry'
-    #         # give the HDF5 root some more attributes
-    #         f.attrs['file_name']        = _filename
-    #         f.attrs['file_time']        = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-    #         f.attrs['creator']          = 'save_wfr_2_hdf5'
-    #         f.attrs['code']             = 'SRW'
-    #         f.attrs['HDF5_Version']     = h5py.version.hdf5_version
-    #         f.attrs['h5py_version']     = h5py.version.version
-    #         f.close()
-    #
-    #     # TODO: delete
-    #     if _amplitude:
-    #         print(">>>>>>>> writing amplitude...")
-    #         ar1 = array('f', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
-    #         srwl.CalcIntFromElecField(ar1, _wfr, 6, 0, 3, _wfr.mesh.eStart, 0, 0)
-    #         arxx = numpy.array(ar1)
-    #         arxx = arxx.reshape((_wfr.mesh.ny, _wfr.mesh.nx))#.T
-    #         arxx = numpy.sqrt(arxx)
-    #         _dump_arr_2_hdf5(arxx,"amplitude/wfr_amplitude", _filename, _subgroupname)
-    #
-    #     if _phase:
-    #         print(">>>>>>>> writing phase...")
-    #         # s
-    #         ar1 = array('d', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
-    #         srwl.CalcIntFromElecField(ar1, _wfr, 0, 4, 3, _wfr.mesh.eStart, 0, 0)
-    #         arxx = numpy.array(ar1)
-    #         arxx = arxx.reshape((_wfr.mesh.ny, _wfr.mesh.nx))#.T
-    #
-    #
-    #         # p
-    #         ar2 = array('d', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
-    #         srwl.CalcIntFromElecField(ar2, _wfr, 1, 4, 3, _wfr.mesh.eStart, 0, 0)
-    #         aryy = numpy.array(ar2)
-    #         aryy = arxx.reshape((_wfr.mesh.ny, _wfr.mesh.nx))#.T
-    #
-    #         _dump_arr_2_hdf5(arxx-aryy, "phase/wfr_phase", _filename, _subgroupname) # difference
-    #         _dump_arr_2_hdf5(arxx, "phase/wfr_phase_s", _filename, _subgroupname)
-    #         _dump_arr_2_hdf5(aryy, "phase/wfr_phase_p", _filename, _subgroupname)
-    #
-    #     if (_complex_amplitude) or (_intensity):
-    #         print(">>>>>>>> writing complex amplitude or intensity...",_wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)
-    #         x_polarization = _SRW_2_Numpy(_wfr.arEx, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # sigma
-    #         print(">>>>>>>> writing complex amplitude or intensity 1...",x_polarization)
-    #         y_polarization = _SRW_2_Numpy(_wfr.arEy, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # pi
-    #
-    #         e_field = numpy.concatenate((x_polarization, y_polarization), 3)
-    #
-    #         print(">>>>>>>> writing complex amplitude or intensity 2...")
-    #         complex_amplitude_s = e_field[0,:,:,0]
-    #         complex_amplitude_p = e_field[0,:,:,1]
-    #
-    #         print(">>>>>>>> writing complex amplitude or intensity 3...")
-    #         if _complex_amplitude:
-    #             _dump_arr_2_hdf5(complex_amplitude_s.T, "wfr_complex_amplitude_s", _filename, _subgroupname)
-    #             _dump_arr_2_hdf5(complex_amplitude_p.T, "wfr_complex_amplitude_p", _filename, _subgroupname)
-    #
-    #         print(">>>>>>>> writing complex amplitude or intensity 4...")
-    #         if _intensity:
-    #             intens_p = numpy.abs(complex_amplitude_p) ** 2
-    #             intens_s = numpy.abs(complex_amplitude_s) ** 2
-    #             intens = intens_s + intens_p
-    #
-    #             _dump_arr_2_hdf5(intens.T,"intensity/wfr_intensity",_filename, _subgroupname)
-    #             _dump_arr_2_hdf5(intens_s.T,"intensity/wfr_intensity_s",_filename, _subgroupname)
-    #             _dump_arr_2_hdf5(intens_p.T,"intensity/wfr_intensity_p",_filename, _subgroupname)
-    #
-    #     f = h5py.File(_filename, 'a')
-    #     f1 = f[_subgroupname]
-    #
-    #     print(">>>>>>>> writing attributes...")
-    #     # points to the default data to be plotted
-    #     f1.attrs['NX_class'] = 'NXentry'
-    #     f1.attrs['default']  = 'intensity'
-    #
-    #     #f1["wfr_method"] = "SRW"
-    #     f1["wfr_photon_energy"] = float(_wfr.mesh.eStart)
-    #     f1["wfr_zStart"] = _wfr.mesh.zStart
-    #     f1["wfr_Rx_dRx"] =  numpy.array([_wfr.Rx,_wfr.dRx])
-    #     f1["wfr_Ry_dRy"] =  numpy.array([_wfr.Ry,_wfr.dRy])
-    #     f1["wfr_mesh_X"] =  numpy.array([_wfr.mesh.xStart,_wfr.mesh.xFin,_wfr.mesh.nx])
-    #     f1["wfr_mesh_Y"] =  numpy.array([_wfr.mesh.yStart,_wfr.mesh.yFin,_wfr.mesh.ny])
-    #
-    #     # Add NX plot attribites for automatic plot with silx view
-    #     myflags = [_intensity,_amplitude,_phase]
-    #     mylabels = ['intensity','amplitude','phase']
-    #     for i,label in enumerate(mylabels):
-    #         if myflags[i]:
-    #
-    #             f2 = f1[mylabels[i]]
-    #             f2.attrs['NX_class'] = 'NXdata'
-    #             f2.attrs['signal'] = 'wfr_%s'%(mylabels[i])
-    #             f2.attrs['axes'] = [b'axis_y', b'axis_x']
-    #
-    #             # ds = nxdata.create_dataset('image_data', data=data)
-    #             f3 = f2["wfr_%s"%(mylabels[i])]
-    #             f3.attrs['interpretation'] = 'image'
-    #
-    #             # X axis data
-    #             ds = f2.create_dataset('axis_y', data=1e6*numpy.linspace(_wfr.mesh.yStart,_wfr.mesh.yFin,_wfr.mesh.ny))
-    #             # f1['axis1_name'] = numpy.arange(_wfr.mesh.ny)
-    #             ds.attrs['units'] = 'microns'
-    #             ds.attrs['long_name'] = 'Y Pixel Size (microns)'    # suggested X axis plot label
-    #             #
-    #             # Y axis data
-    #             ds = f2.create_dataset('axis_x', data=1e6*numpy.linspace(_wfr.mesh.xStart,_wfr.mesh.xFin,_wfr.mesh.nx))
-    #             ds.attrs['units'] = 'microns'
-    #             ds.attrs['long_name'] = 'X Pixel Size (microns)'    # suggested Y axis plot label
-    #     f.close()
-    #
-    #     FileName = _filename.split("/")
-    #     print(">>>> save_wfr_2_hdf5: file written/updated %s" %FileName[-1])
-    #
-    # except:
-    #     if _overwrite is not True:
-    #         print(">>>> Bad input argument")
-    #         return
-    #     os.remove(_filename)
-    #     FileName = _filename.split("/")
-    #
-    #     print(">>>> save_wfr_2_hdf5: file deleted %s"%FileName[-1])
-    #     save_wfr_2_hdf5(_wfr,_filename,_subgroupname,_complex_amplitude,_intensity,_amplitude,_phase,_overwrite = False)
+def load_hdf5_2_wfr(filename,filepath):
+    wdic = load_hdf5_2_dictionary(filename,filepath)
+    wfr = _dictionary_to_wfr(wdic)
+    return wfr
 
 def save_stokes_2_hdf5(_Stokes,_filename,_subgroupname="wfr",_S0=True,_S1=False,_S2=False,_S3=False,_overwrite=True):
     """
@@ -503,47 +362,8 @@ def SRWdat_2_h5(_file_path,_num_type='f'):
 
     f.close()
 
-#
-# Auxiliar functions
-#
 
-def _SRW_2_Numpy(_srw_array, _nx, _ny, _ne):
-    """
-    Converts an SRW array to a numpy.array.
-    :param _srw_array: SRW array
-    :param _nx: numbers of points vs horizontal positions
-    :param _ny: numbers of points vs vertical positions
-    :param _ne: numbers of points vs photon energy
-    :return: 4D numpy array: [energy, horizontal, vertical, polarisation={0:horizontal, 1: vertical}]
-    """
-    re = numpy.array(_srw_array[::2], dtype=numpy.float)
-    im = numpy.array(_srw_array[1::2], dtype=numpy.float)
-
-    e = re + 1j * im
-    e = e.reshape((_ny, _nx, _ne, 1))
-    e = e.swapaxes(0, 2)
-
-    return e.copy()
-
-def _dump_arr_2_hdf5(_arr,_calculation, _filename, _subgroupname):
-    """
-    Auxiliary routine to save_wfr_2_hdf5() and save_stokes_2_hdf5()
-    :param _arr: (usually 2D) array to be saved on the hdf5 file inside the _subgroupname
-    :param _calculation
-    :param _filename: path to file for saving the wavefront
-    :param _subgroupname: container mechanism by which HDF5 files are organised
-    """
-    sys.stdout.flush()
-    f = h5py.File(_filename, 'a')
-    try:
-        f1 = f.create_group(_subgroupname)
-    except:
-        f1 = f[_subgroupname]
-    #f1[_calculation] = _arr
-    fdata = f1.create_dataset(_calculation, data=_arr)
-    f.close()
-
-def load_h5_file_to_dictionary(filename,filepath):
+def load_hdf5_2_dictionary(filename,filepath):
 
     try:
         f = h5py.File(filename, 'r')
@@ -569,7 +389,70 @@ def load_h5_file_to_dictionary(filename,filepath):
     except:
         raise Exception("Failed to load SRW wavefront to h5 file: "+filename)
 
-def dictionary_to_srw_wavefront(wdic):
+#
+# Auxiliar functions
+#
+def _numpyArrayToSRWArray(numpy_array):
+    """
+    Converts a numpy.array to an array usable by SRW.
+    :param numpy_array: a 2D numpy array
+    :return: a 2D complex SRW array
+    """
+    elements_size = numpy_array.size
+
+    r_horizontal_field = numpy_array[:, :].real.transpose().flatten().astype(numpy.float)
+    i_horizontal_field = numpy_array[:, :].imag.transpose().flatten().astype(numpy.float)
+
+    tmp = numpy.zeros(elements_size * 2, dtype=numpy.float32)
+    for i in range(elements_size):
+        tmp[2*i] = r_horizontal_field[i]
+        tmp[2*i+1] = i_horizontal_field[i]
+
+    return array('f', tmp)
+
+def _SRWArrayToNumpy(srw_array, dim_x, dim_y, number_energies):
+    """
+    Converts a SRW array to a numpy.array.
+    :param srw_array: SRW array
+    :param dim_x: size of horizontal dimension
+    :param dim_y: size of vertical dimension
+    :param number_energies: Size of energy dimension
+    :return: 4D numpy array: [energy, horizontal, vertical, polarisation={0:horizontal, 1: vertical}]
+    """
+    re = numpy.array(srw_array[::2],  dtype=numpy.float)
+    im = numpy.array(srw_array[1::2], dtype=numpy.float)
+
+    e = re + 1j * im
+    e = e.reshape((dim_y,
+                   dim_x,
+                   number_energies,
+                   1)
+                  )
+
+    e = e.swapaxes(0, 2)
+
+    return e.copy()
+
+def _dump_arr_2_hdf5(_arr,_calculation, _filename, _subgroupname):
+    """
+    Auxiliary routine to save_wfr_2_hdf5() and save_stokes_2_hdf5()
+    :param _arr: (usually 2D) array to be saved on the hdf5 file inside the _subgroupname
+    :param _calculation
+    :param _filename: path to file for saving the wavefront
+    :param _subgroupname: container mechanism by which HDF5 files are organised
+    """
+    sys.stdout.flush()
+    f = h5py.File(_filename, 'a')
+    try:
+        f1 = f.create_group(_subgroupname)
+    except:
+        f1 = f[_subgroupname]
+    #f1[_calculation] = _arr
+    fdata = f1.create_dataset(_calculation, data=_arr)
+    f.close()
+
+
+def _dictionary_to_wfr(wdic):
     """
     Creates a SRWWavefront from pi and sigma components of the electrical field.
     :param horizontal_start: Horizontal start position of the grid in m
@@ -605,8 +488,8 @@ def dictionary_to_srw_wavefront(wdic):
         # raise Exception("Both horizontal and vertical grid must have even number of points")
         print("NumpyToSRW: WARNING: Both horizontal and vertical grid must have even number of points")
 
-    horizontal_field = numpyArrayToSRWArray(w_s)
-    vertical_field = numpyArrayToSRWArray(w_p)
+    horizontal_field = _numpyArrayToSRWArray(w_s)
+    vertical_field = _numpyArrayToSRWArray(w_p)
 
     srw_wavefront = SRWLWfr(_arEx=horizontal_field,
                             _arEy=vertical_field,
@@ -629,7 +512,3 @@ def dictionary_to_srw_wavefront(wdic):
 
     return srw_wavefront
 
-def load_h5_file_to_srw_wavefront(filename,filepath):
-    wdic = load_h5_file_to_dictionary(filename,filepath)
-    wfr = dictionary_to_srw_wavefront(wdic)
-    return wfr
