@@ -264,20 +264,18 @@ if __name__ == "__main__":
     if do_calculate:
         wfr = calculate_undulator_source(do_plots=show_plots)
 
-        save_wfr_2_hdf5(wfr,"tmp2.h5",_intensity=True,_phase=True,_overwrite=True)
+        save_wfr_2_hdf5(wfr,"tmp2.h5",intensity=True,phase=True,overwrite=True)
 
         wfr_end = propagate_beamline(wfr,do_plots=show_plots)
 
-        save_wfr_2_hdf5(wfr_end,"tmp2.h5",_intensity=True,_phase=False,
-                        _overwrite=False,_subgroupname="wfr_end")
+        save_wfr_2_hdf5(wfr_end,"tmp2.h5",intensity=True,phase=False,overwrite=False,subgroupname="wfr_end")
 
     if do_load:
         wfr_loaded = load_hdf5_2_wfr("tmp2.h5","wfr")
 
-        save_wfr_2_hdf5(wfr_loaded,"tmp2bis.h5",_intensity=True,_phase=False,_overwrite=True)
+        save_wfr_2_hdf5(wfr_loaded,"tmp2bis.h5",intensity=True,phase=False,overwrite=True)
 
         wfr_end2 = propagate_beamline(wfr_loaded,do_plots=False)
 
-        save_wfr_2_hdf5(wfr_end2,"tmp2bis.h5",_intensity=True,_phase=True,
-                        _overwrite=False,_subgroupname="wfr_end")
+        save_wfr_2_hdf5(wfr_end2,"tmp2bis.h5",intensity=True,phase=True,overwrite=False,subgroupname="wfr_end")
 

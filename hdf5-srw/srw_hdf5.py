@@ -41,32 +41,32 @@ import sys
 import os
 
 
-def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_intensity=False,_phase=False,_overwrite=True):
+def save_wfr_2_hdf5(wfr,filename,subgroupname="wfr",intensity=False,phase=False,overwrite=True):
     """
     Writes wavefront data into a hdf5 generic file.
     When using the append mode to write h5 files, overwriting forces to initializes a new file.
-    :param _wfr: input / output resulting Wavefront structure (instance of SRWLWfr);
-    :param _filename: path to file for saving the wavefront
-    :param _subgroupname: container mechanism by which HDF5 files are organised
-    :param _intensity: Single-Electron" Intensity - total polarisation (instance of srwl.CalcIntFromElecField)
-    :param _phase: "Single-Electron" Radiation Phase - total polarisation (instance of srwl.CalcIntFromElecField)
-    :param _overwrite: flag that should always be set to True to avoid infinity loop on the recursive part of the function.
+    :param wfr: input / output resulting Wavefront structure (instance of SRWLWfr);
+    :param filename: path to file for saving the wavefront
+    :param subgroupname: container mechanism by which HDF5 files are organised
+    :param intensity: Single-Electron" Intensity - total polarisation (instance of srwl.CalcIntFromElecField)
+    :param phase: "Single-Electron" Radiation Phase - total polarisation (instance of srwl.CalcIntFromElecField)
+    :param overwrite: flag that should always be set to True to avoid infinity loop on the recursive part of the function.
     """
 
     _complex_amplitude=True
 
-    if (os.path.isfile(_filename)) and (_overwrite==True):
-        os.remove(_filename)
-        FileName = _filename.split("/")
+    if (os.path.isfile(filename)) and (overwrite==True):
+        os.remove(filename)
+        FileName = filename.split("/")
         print("save_wfr_2_hdf5: file deleted %s"%FileName[-1])
 
-    if not os.path.isfile(_filename):  # if file doesn't exist, create it.
+    if not os.path.isfile(filename):  # if file doesn't exist, create it.
         sys.stdout.flush()
-        f = h5py.File(_filename, 'w')
+        f = h5py.File(filename, 'w')
         # points to the default data to be plotted
         f.attrs['default']          = 'entry'
         # give the HDF5 root some more attributes
-        f.attrs['file_name']        = _filename
+        f.attrs['file_name']        = filename
         f.attrs['file_time']        = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
         f.attrs['creator']          = 'save_wfr_2_hdf5'
         f.attrs['code']             = 'SRW'
@@ -75,27 +75,27 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_intensity=False,_phase=F
         f.close()
 
 
-    if _phase:
+    if phase:
         # s
-        ar1 = array('d', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
-        srwl.CalcIntFromElecField(ar1, _wfr, 0, 4, 3, _wfr.mesh.eStart, 0, 0)
+        ar1 = array('d', [0] * wfr.mesh.nx * wfr.mesh.ny)  # "flat" 2D array to take intensity data
+        srwl.CalcIntFromElecField(ar1, wfr, 0, 4, 3, wfr.mesh.eStart, 0, 0)
         arxx = numpy.array(ar1)
-        arxx = arxx.reshape((_wfr.mesh.ny, _wfr.mesh.nx))#.T
+        arxx = arxx.reshape((wfr.mesh.ny, wfr.mesh.nx))#.T
 
 
         # p
-        ar2 = array('d', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
-        srwl.CalcIntFromElecField(ar2, _wfr, 1, 4, 3, _wfr.mesh.eStart, 0, 0)
+        ar2 = array('d', [0] * wfr.mesh.nx * wfr.mesh.ny)  # "flat" 2D array to take intensity data
+        srwl.CalcIntFromElecField(ar2, wfr, 1, 4, 3, wfr.mesh.eStart, 0, 0)
         aryy = numpy.array(ar2)
-        aryy = arxx.reshape((_wfr.mesh.ny, _wfr.mesh.nx))#.T
+        aryy = arxx.reshape((wfr.mesh.ny, wfr.mesh.nx))#.T
 
-        _dump_arr_2_hdf5(arxx-aryy, "phase/wfr_phase", _filename, _subgroupname) # difference
-        _dump_arr_2_hdf5(arxx, "phase/wfr_phase_s", _filename, _subgroupname)
-        _dump_arr_2_hdf5(aryy, "phase/wfr_phase_p", _filename, _subgroupname)
+        _dump_arr_2_hdf5(arxx-aryy, "phase/wfr_phase", filename, subgroupname) # difference
+        _dump_arr_2_hdf5(arxx, "phase/wfr_phase_s", filename, subgroupname)
+        _dump_arr_2_hdf5(aryy, "phase/wfr_phase_p", filename, subgroupname)
 
-    if (_complex_amplitude) or (_intensity):
-        x_polarization = _SRWArrayToNumpy(_wfr.arEx, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # sigma
-        y_polarization = _SRWArrayToNumpy(_wfr.arEy, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # pi
+    if (_complex_amplitude) or (intensity):
+        x_polarization = _SRWArrayToNumpy(wfr.arEx, wfr.mesh.nx, wfr.mesh.ny, wfr.mesh.ne)   # sigma
+        y_polarization = _SRWArrayToNumpy(wfr.arEy, wfr.mesh.nx, wfr.mesh.ny, wfr.mesh.ne)   # pi
 
         e_field = numpy.concatenate((x_polarization, y_polarization), 3)
 
@@ -103,35 +103,35 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_intensity=False,_phase=F
         complex_amplitude_p = e_field[0,:,:,1]
 
         if _complex_amplitude:
-            _dump_arr_2_hdf5(complex_amplitude_s.T, "wfr_complex_amplitude_s", _filename, _subgroupname)
-            _dump_arr_2_hdf5(complex_amplitude_p.T, "wfr_complex_amplitude_p", _filename, _subgroupname)
+            _dump_arr_2_hdf5(complex_amplitude_s.T, "wfr_complex_amplitude_s", filename, subgroupname)
+            _dump_arr_2_hdf5(complex_amplitude_p.T, "wfr_complex_amplitude_p", filename, subgroupname)
 
-        if _intensity:
+        if intensity:
             intens_p = numpy.abs(complex_amplitude_p) ** 2
             intens_s = numpy.abs(complex_amplitude_s) ** 2
             intens = intens_s + intens_p
 
-            _dump_arr_2_hdf5(intens.T,"intensity/wfr_intensity",_filename, _subgroupname)
-            _dump_arr_2_hdf5(intens_s.T,"intensity/wfr_intensity_s",_filename, _subgroupname)
-            _dump_arr_2_hdf5(intens_p.T,"intensity/wfr_intensity_p",_filename, _subgroupname)
+            _dump_arr_2_hdf5(intens.T,"intensity/wfr_intensity",filename, subgroupname)
+            _dump_arr_2_hdf5(intens_s.T,"intensity/wfr_intensity_s",filename, subgroupname)
+            _dump_arr_2_hdf5(intens_p.T,"intensity/wfr_intensity_p",filename, subgroupname)
 
-    f = h5py.File(_filename, 'a')
-    f1 = f[_subgroupname]
+    f = h5py.File(filename, 'a')
+    f1 = f[subgroupname]
 
     # points to the default data to be plotted
     f1.attrs['NX_class'] = 'NXentry'
     f1.attrs['default']  = 'intensity'
 
     #f1["wfr_method"] = "SRW"
-    f1["wfr_photon_energy"] = float(_wfr.mesh.eStart)
-    f1["wfr_zStart"] = _wfr.mesh.zStart
-    f1["wfr_Rx_dRx"] =  numpy.array([_wfr.Rx,_wfr.dRx])
-    f1["wfr_Ry_dRy"] =  numpy.array([_wfr.Ry,_wfr.dRy])
-    f1["wfr_mesh_X"] =  numpy.array([_wfr.mesh.xStart,_wfr.mesh.xFin,_wfr.mesh.nx])
-    f1["wfr_mesh_Y"] =  numpy.array([_wfr.mesh.yStart,_wfr.mesh.yFin,_wfr.mesh.ny])
+    f1["wfr_photon_energy"] = float(wfr.mesh.eStart)
+    f1["wfr_zStart"] = wfr.mesh.zStart
+    f1["wfr_Rx_dRx"] =  numpy.array([wfr.Rx,wfr.dRx])
+    f1["wfr_Ry_dRy"] =  numpy.array([wfr.Ry,wfr.dRy])
+    f1["wfr_mesh_X"] =  numpy.array([wfr.mesh.xStart,wfr.mesh.xFin,wfr.mesh.nx])
+    f1["wfr_mesh_Y"] =  numpy.array([wfr.mesh.yStart,wfr.mesh.yFin,wfr.mesh.ny])
 
     # Add NX plot attribites for automatic plot with silx view
-    myflags = [_intensity,_phase]
+    myflags = [intensity,phase]
     mylabels = ['intensity','phase']
     for i,label in enumerate(mylabels):
         if myflags[i]:
@@ -146,18 +146,18 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_intensity=False,_phase=F
             f3.attrs['interpretation'] = 'image'
 
             # X axis data
-            ds = f2.create_dataset('axis_y', data=1e6*numpy.linspace(_wfr.mesh.yStart,_wfr.mesh.yFin,_wfr.mesh.ny))
+            ds = f2.create_dataset('axis_y', data=1e6*numpy.linspace(wfr.mesh.yStart,wfr.mesh.yFin,wfr.mesh.ny))
             # f1['axis1_name'] = numpy.arange(_wfr.mesh.ny)
             ds.attrs['units'] = 'microns'
             ds.attrs['long_name'] = 'Y Pixel Size (microns)'    # suggested X axis plot label
             #
             # Y axis data
-            ds = f2.create_dataset('axis_x', data=1e6*numpy.linspace(_wfr.mesh.xStart,_wfr.mesh.xFin,_wfr.mesh.nx))
+            ds = f2.create_dataset('axis_x', data=1e6*numpy.linspace(wfr.mesh.xStart,wfr.mesh.xFin,wfr.mesh.nx))
             ds.attrs['units'] = 'microns'
             ds.attrs['long_name'] = 'X Pixel Size (microns)'    # suggested Y axis plot label
     f.close()
 
-    FileName = _filename.split("/")
+    FileName = filename.split("/")
     print("save_wfr_2_hdf5: file written/updated %s" %FileName[-1])
 
 def load_hdf5_2_wfr(filename,filepath):
@@ -488,4 +488,3 @@ def _dictionary_to_wfr(wdic):
     srw_wavefront.dRy = RY[1]
 
     return srw_wavefront
-
