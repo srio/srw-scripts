@@ -29,7 +29,7 @@ __date__ = "27/05/2018"
 
 """
 
-Example of dumping and loading SRW to hdf5 files
+Example of dumping and loading SRW wavefronts to hdf5 files
 
 """
 
@@ -37,7 +37,7 @@ Example of dumping and loading SRW to hdf5 files
 import numpy
 from srwlib import *
 
-from srw_hdf5 import save_wfr_2_hdf5, load_hdf5_2_wfr
+from srw_hdf5 import save_wfr_2_hdf5, load_hdf5_2_wfr, load_hdf5_2_dictionary
 
 
 import scipy.constants as codata
@@ -77,7 +77,7 @@ def plot_wfr(wfr,kind='intensity',show=True,xtitle="X",ytitle="Y",title="",aspec
 def calculate_undulator_source(Source="EBS",pMltLr=28.3,do_plots=True):
     #############################################################################
     # Photon source
-    #********************************Undulator parameters (U20.2)
+    #********************************Undulator parameters
     numPer = 77			# Number of ID Periods
     undPer = 0.0183		# Period Length [m]
     phB = 0	        	# Initial Phase of the Horizontal field component
@@ -171,7 +171,7 @@ def calculate_undulator_source(Source="EBS",pMltLr=28.3,do_plots=True):
     wfr.mesh.yFin = - wfr.mesh.yStart
     wfr.partBeam = eBeam
 
-    print('- Performing Initial Electric Field calculation ... ')
+    print('source calculation starts ... ')
     srwl.CalcElecFieldSR(wfr, eTraj, magFldCnt, arPrecSR)
 
     #
@@ -188,50 +188,23 @@ def calculate_undulator_source(Source="EBS",pMltLr=28.3,do_plots=True):
 
 def propagate_beamline(wfr,do_plots=True):
 
-    print('\nWave propagation through ID16A - U18.3 - 17keV mode\n')
+    print("beamline calculations starts...")
 
-    #############################################################################
-    # Program variables
-    defocus  = 0		  # (-) before focus, (+) after focus
-    Errors   = "off"	# loads (or not - off) errors for the optics
-    ThnElmnt = "on" 	# ThnElmnt = "on" uses Thin Lenses for all optical elements
-    #############################################################################
-
-
-
-    #############################################################################
-    # Beamline assembly
-    print("\nSetting up beamline\n")
-    beamE = 17
-    Wavelength = codata.h*codata.c/codata.e/(1e3*beamE)
-    #============= ABSOLUTE POSITIONS =====================================#
     pMltLr = 28.3
     pSlt   = 40
-    pKBV   = 184.90
-    pKBH   = 184.95
-    pGBE   = 185
+
 
     Drft1  = SRWLOptD((pSlt-pMltLr))
 
-
-    #============= MULTILAYER(H) ==========================================#
-    """Side bounce multi layer horizontal focusing mirror generating a
-    secondary source on a slit upstream the beamline. Here, the mirror is
-    represented as a ideal thin lens + an aperture to limit the beam
-    footprint"""
     W_MltLr = 13*1E-3
     L_MltLr = 120*1E-3
     grzAngl = 31.42*1E-3
     oeAptrMltLr = SRWLOptA('r','a',L_MltLr*numpy.sin(grzAngl),W_MltLr)
 
-    if (ThnElmnt.lower() == 'on'):
-        fMltLrh = 1/((1/pMltLr)+(1/(pSlt-pMltLr)))
-        fMltLrv =1E23
-        oeMltLr = SRWLOptL(_Fx=fMltLrh, _Fy=fMltLrv)
+    fMltLrh = 1/((1/pMltLr)+(1/(pSlt-pMltLr)))
+    fMltLrv =1E23
+    oeMltLr = SRWLOptL(_Fx=fMltLrh, _Fy=fMltLrv)
 
-    else:
-        oeMltLr = SRWLOptMirEl(_p = pMltLr,_q=(pSlt-pMltLr) ,_ang_graz=grzAngl,_r_sag=1E23,	_size_tang=L_MltLr,
-                               _size_sag=W_MltLr, _nvx=cos(grzAngl), _nvy=0, _nvz=-numpy.sin(grzAngl), _tvx=-numpy.sin(grzAngl), _tvy=0)
 
     #============= Wavefront Propagation Parameters =======================#
     #                [ 0] [1] [2]  [3]  [4]  [5]  [6]  [7]  [8]  [9] [10] [11]
@@ -259,6 +232,8 @@ if __name__ == "__main__":
 
     do_calculate = True
     do_load = True
+    do_compare = True
+
     show_plots = False
 
     if do_calculate:
@@ -279,3 +254,19 @@ if __name__ == "__main__":
 
         save_wfr_2_hdf5(wfr_end2,"tmp2bis.h5",intensity=True,phase=True,overwrite=False,subgroupname="wfr_end")
 
+
+
+    if do_compare:
+        wf1_source = load_hdf5_2_dictionary("tmp2.h5","wfr")
+        wf2_source = load_hdf5_2_dictionary("tmp2bis.h5","wfr")
+        print("comparing wavefront at source")
+        for key in wf1_source.keys():
+            print("   checking field: ",key)
+            numpy.testing.assert_almost_equal(wf1_source[key],wf2_source[key])
+
+        wf1_end = load_hdf5_2_dictionary("tmp2.h5","wfr_end")
+        wf2_end = load_hdf5_2_dictionary("tmp2bis.h5","wfr_end")
+        print("comparing wavefront propagated")
+        for key in wf1_source.keys():
+            print("   checking field: ",key)
+            numpy.testing.assert_almost_equal(1e-6*wf1_end[key],1e-6*wf2_end[key],1)
