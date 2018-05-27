@@ -1,8 +1,7 @@
-
 # coding: utf-8
 # /*##########################################################################
 #
-# Copyright (c) 2017 European Synchrotron Radiation Facility
+# Copyright (c) 2018 European Synchrotron Radiation Facility
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +23,7 @@
 #
 # ###########################################################################*/
 
-__authors__ = ["R Celestre, M Sanchez del Rio, M Glass - ESRF"]
+__authors__ = ["R Celestre, M Sanchez del Rio"]
 __license__ = "MIT"
 __date__ = "27/05/2018"
 
@@ -265,20 +264,20 @@ if __name__ == "__main__":
     if do_calculate:
         wfr = calculate_undulator_source(do_plots=show_plots)
 
-        save_wfr_2_hdf5(wfr,"tmp2.h5",_complex_amplitude=True,_intensity=True,_amplitude=False,_phase=True,_overwrite=True)
+        save_wfr_2_hdf5(wfr,"tmp2.h5",_intensity=True,_phase=True,_overwrite=True)
 
         wfr_end = propagate_beamline(wfr,do_plots=show_plots)
 
-        save_wfr_2_hdf5(wfr_end,"tmp2.h5",_complex_amplitude=True,_intensity=True,_amplitude=False,_phase=False,
+        save_wfr_2_hdf5(wfr_end,"tmp2.h5",_intensity=True,_phase=False,
                         _overwrite=False,_subgroupname="wfr_end")
 
     if do_load:
         wfr_loaded = load_hdf5_2_wfr("tmp2.h5","wfr")
 
-        save_wfr_2_hdf5(wfr_loaded,"tmp2bis.h5",_complex_amplitude=True,_intensity=True,_amplitude=False,_phase=False,_overwrite=True)
+        save_wfr_2_hdf5(wfr_loaded,"tmp2bis.h5",_intensity=True,_phase=False,_overwrite=True)
 
         wfr_end2 = propagate_beamline(wfr_loaded,do_plots=False)
 
-        save_wfr_2_hdf5(wfr_end2,"tmp2bis.h5",_complex_amplitude=True,_intensity=True,_amplitude=False,_phase=True,
+        save_wfr_2_hdf5(wfr_end2,"tmp2bis.h5",_intensity=True,_phase=True,
                         _overwrite=False,_subgroupname="wfr_end")
 

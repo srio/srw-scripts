@@ -1,65 +1,64 @@
-############################################################################
-# SRWLibAux for Python
-# Author: Rafael Celestre, X-ray Optics Group, ESRF
-# Rafael.Celestre@esrf.fr
-# 31.01.2018
-#############################################################################
-"""
-MIT License
+# coding: utf-8
+# /*##########################################################################
+#
+# Copyright (c) 2018 European Synchrotron Radiation Facility
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# ###########################################################################*/
 
-Copyright (c) 2018 Rafael Celestre
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-#############################################################################
 from __future__ import print_function #Python 2.7 compatibility
 
+__authors__ = ["R Celestre, M Sanchez del Rio, M Glass - ESRF"]
+__license__ = "MIT"
+__date__ = "27/05/2018"
+
+
+
+
 from srwlib import *
-# from uti_math import*
-# from array import *
+import numpy
+import h5py
+
 import time
 import sys
 import os
 
-import h5py
-import numpy
 
-
-def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_intensity=False,_amplitude=False,_phase=False,_overwrite=True):
+def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_intensity=False,_phase=False,_overwrite=True):
     """
-    Auxiliary function to write wavefront data into a hdf5 generic file.
-    When using the append mode to write h5 files, overwriting does not work and makes the code crash. To avoid this
-    issue, try/except is used. If by any chance a file should be overwritten, it is firstly deleted and re-written.
+    Writes wavefront data into a hdf5 generic file.
+    When using the append mode to write h5 files, overwriting forces to initializes a new file.
     :param _wfr: input / output resulting Wavefront structure (instance of SRWLWfr);
     :param _filename: path to file for saving the wavefront
     :param _subgroupname: container mechanism by which HDF5 files are organised
-    :param _complex_amplitude: complex electric field for sigma and pi polarisation
     :param _intensity: Single-Electron" Intensity - total polarisation (instance of srwl.CalcIntFromElecField)
-    :param _amplitude: S0 Stokes parameter. I = P_0 + P_90 = <Ex^2 + Ey^2>.
     :param _phase: "Single-Electron" Radiation Phase - total polarisation (instance of srwl.CalcIntFromElecField)
     :param _overwrite: flag that should always be set to True to avoid infinity loop on the recursive part of the function.
     """
 
+    _complex_amplitude=True
+
     if (os.path.isfile(_filename)) and (_overwrite==True):
         os.remove(_filename)
         FileName = _filename.split("/")
-        print(">>>> save_wfr_2_hdf5: file deleted %s"%FileName[-1])
+        print("save_wfr_2_hdf5: file deleted %s"%FileName[-1])
 
     if not os.path.isfile(_filename):  # if file doesn't exist, create it.
         sys.stdout.flush()
@@ -75,18 +74,8 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
         f.attrs['h5py_version']     = h5py.version.version
         f.close()
 
-    # TODO: delete
-    if _amplitude:
-        print(">>>>>>>> writing amplitude...")
-        ar1 = array('f', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
-        srwl.CalcIntFromElecField(ar1, _wfr, 6, 0, 3, _wfr.mesh.eStart, 0, 0)
-        arxx = numpy.array(ar1)
-        arxx = arxx.reshape((_wfr.mesh.ny, _wfr.mesh.nx))#.T
-        arxx = numpy.sqrt(arxx)
-        _dump_arr_2_hdf5(arxx,"amplitude/wfr_amplitude", _filename, _subgroupname)
 
     if _phase:
-        print(">>>>>>>> writing phase...")
         # s
         ar1 = array('d', [0] * _wfr.mesh.nx * _wfr.mesh.ny)  # "flat" 2D array to take intensity data
         srwl.CalcIntFromElecField(ar1, _wfr, 0, 4, 3, _wfr.mesh.eStart, 0, 0)
@@ -105,24 +94,18 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
         _dump_arr_2_hdf5(aryy, "phase/wfr_phase_p", _filename, _subgroupname)
 
     if (_complex_amplitude) or (_intensity):
-        print(dir(_wfr))
-        print(">>>>>>>> writing complex amplitude or intensity...",_wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)
         x_polarization = _SRWArrayToNumpy(_wfr.arEx, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # sigma
-        print(">>>>>>>> writing complex amplitude or intensity 1...")
         y_polarization = _SRWArrayToNumpy(_wfr.arEy, _wfr.mesh.nx, _wfr.mesh.ny, _wfr.mesh.ne)   # pi
 
         e_field = numpy.concatenate((x_polarization, y_polarization), 3)
 
-        print(">>>>>>>> writing complex amplitude or intensity 2...")
         complex_amplitude_s = e_field[0,:,:,0]
         complex_amplitude_p = e_field[0,:,:,1]
 
-        print(">>>>>>>> writing complex amplitude or intensity 3...")
         if _complex_amplitude:
             _dump_arr_2_hdf5(complex_amplitude_s.T, "wfr_complex_amplitude_s", _filename, _subgroupname)
             _dump_arr_2_hdf5(complex_amplitude_p.T, "wfr_complex_amplitude_p", _filename, _subgroupname)
 
-        print(">>>>>>>> writing complex amplitude or intensity 4...")
         if _intensity:
             intens_p = numpy.abs(complex_amplitude_p) ** 2
             intens_s = numpy.abs(complex_amplitude_s) ** 2
@@ -135,7 +118,6 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
     f = h5py.File(_filename, 'a')
     f1 = f[_subgroupname]
 
-    print(">>>>>>>> writing attributes...")
     # points to the default data to be plotted
     f1.attrs['NX_class'] = 'NXentry'
     f1.attrs['default']  = 'intensity'
@@ -149,8 +131,8 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
     f1["wfr_mesh_Y"] =  numpy.array([_wfr.mesh.yStart,_wfr.mesh.yFin,_wfr.mesh.ny])
 
     # Add NX plot attribites for automatic plot with silx view
-    myflags = [_intensity,_amplitude,_phase]
-    mylabels = ['intensity','amplitude','phase']
+    myflags = [_intensity,_phase]
+    mylabels = ['intensity','phase']
     for i,label in enumerate(mylabels):
         if myflags[i]:
 
@@ -176,9 +158,16 @@ def save_wfr_2_hdf5(_wfr,_filename,_subgroupname="wfr",_complex_amplitude=True,_
     f.close()
 
     FileName = _filename.split("/")
-    print(">>>> save_wfr_2_hdf5: file written/updated %s" %FileName[-1])
+    print("save_wfr_2_hdf5: file written/updated %s" %FileName[-1])
 
 def load_hdf5_2_wfr(filename,filepath):
+    """
+    Loads a wawefront from an hdf5 file into a SRW wavefront object.
+
+    :param filename: the file name where a SRW wavefront has been dumped
+    :param filepath: the trying to access the file (wavefront entry name in the file, e.g., "wfr" or "wfr_end")
+    :return:
+    """
     wdic = load_hdf5_2_dictionary(filename,filepath)
     wfr = _dictionary_to_wfr(wdic)
     return wfr
@@ -455,19 +444,7 @@ def _dump_arr_2_hdf5(_arr,_calculation, _filename, _subgroupname):
 def _dictionary_to_wfr(wdic):
     """
     Creates a SRWWavefront from pi and sigma components of the electrical field.
-    :param horizontal_start: Horizontal start position of the grid in m
-    :param horizontal_end: Horizontal end position of the grid in m
-    :param horizontal_efield: The pi component of the complex electrical field
-    :param vertical_start: Vertical start position of the grid in m
-    :param vertical_end: Vertical end position of the grid in m
-    :param vertical_efield: The sigma component of the complex electrical field
-    :param energy: Energy in eV
-    :param z: z position of the wavefront in m
-    :param Rx: Instantaneous horizontal wavefront radius
-    :param dRx: Error in instantaneous horizontal wavefront radius
-    :param Ry: Instantaneous vertical wavefront radius
-    :param dRy: Error in instantaneous vertical wavefront radius
-    :return: A wavefront usable with SRW.
+
     """
 
     w_s = wdic["wfr_complex_amplitude_s"]
