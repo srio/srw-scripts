@@ -48,7 +48,10 @@ def save_wfr_2_hdf5(wfr,filename,subgroupname="wfr",intensity=False,phase=False,
     :param wfr: input / output resulting Wavefront structure (instance of SRWLWfr);
     :param filename: path to file for saving the wavefront
     :param subgroupname: container mechanism by which HDF5 files are organised
-    :param intensity: Single-Electron" Intensity - total polarisation (instance of srwl.CalcIntFromElecField)
+    :param intensity: Single-Electron" Intensity - Possible values:
+            0 or False: Do not write intensity (Default)
+            1 or True: Writes total intensity (total polarisation)
+            2: Writes total intensity (total polarisation) plus sigma polarization and pi polarization
     :param phase: "Single-Electron" Radiation Phase - total polarisation (instance of srwl.CalcIntFromElecField)
     :param overwrite: flag that should always be set to True to avoid infinity loop on the recursive part of the function.
     """
@@ -112,8 +115,9 @@ def save_wfr_2_hdf5(wfr,filename,subgroupname="wfr",intensity=False,phase=False,
             intens = intens_s + intens_p
 
             _dump_arr_2_hdf5(intens.T,"intensity/wfr_intensity",filename, subgroupname)
-            _dump_arr_2_hdf5(intens_s.T,"intensity/wfr_intensity_s",filename, subgroupname)
-            _dump_arr_2_hdf5(intens_p.T,"intensity/wfr_intensity_p",filename, subgroupname)
+            if intensity == 2:
+                _dump_arr_2_hdf5(intens_s.T,"intensity/wfr_intensity_s",filename, subgroupname)
+                _dump_arr_2_hdf5(intens_p.T,"intensity/wfr_intensity_p",filename, subgroupname)
 
     f = h5py.File(filename, 'a')
     f1 = f[subgroupname]
@@ -123,6 +127,7 @@ def save_wfr_2_hdf5(wfr,filename,subgroupname="wfr",intensity=False,phase=False,
     f1.attrs['default']  = 'intensity'
 
     #f1["wfr_method"] = "SRW"
+    #f1["wfr_dimension"] = 2
     f1["wfr_photon_energy"] = float(wfr.mesh.eStart)
     f1["wfr_zStart"] = wfr.mesh.zStart
     f1["wfr_Rx_dRx"] =  numpy.array([wfr.Rx,wfr.dRx])
@@ -376,7 +381,7 @@ def load_hdf5_2_dictionary(filename,filepath):
         f.close()
         return out
     except:
-        raise Exception("Failed to load SRW wavefront to h5 file: "+filename)
+        raise Exception("Failed to load SRW wavefront from h5 file: "+filename)
 
 #
 # Auxiliar functions
@@ -456,6 +461,11 @@ def _dictionary_to_wfr(wdic):
     RY = wdic["wfr_Ry_dRy"]
     Z = wdic["wfr_zStart"]
 
+    # wshape = w_s.shape
+    # print(">>>>>>>>>>>>>>>>wshape before: ",wshape,w_s.shape)
+    # w_s.shape = [1,wshape[0],wshape[1],1]
+    # w_p.shape = [1,wshape[0],wshape[1],1]
+    # print(">>>>>>>>>>>>>>>>wshape after: ",wshape,w_s.shape)
 
     horizontal_size = w_s.shape[0]
     vertical_size = w_s.shape[1]
@@ -480,7 +490,11 @@ def _dictionary_to_wfr(wdic):
                             _yStart=Y[0],
                             _yFin=Y[1],
                             _ny=int(Y[2]),
-                            _zStart=Z)
+                            _zStart=Z,
+                            _partBeam=None)
+
+    # srw_wavefront.nx = X[2]
+    # srw_wavefront.ny = Y[2]
 
     srw_wavefront.Rx = RX[0]
     srw_wavefront.Ry = RY[0]

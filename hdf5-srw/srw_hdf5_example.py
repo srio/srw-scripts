@@ -128,6 +128,7 @@ def calculate_undulator_source(Source="EBS",pMltLr=28.3,do_plots=True):
 
     eBeam.partStatMom1.gamma = electron_energy_in_GeV/electron_rest_energy_in_GeV # Relative Energy
     K = sqrt(2)*sqrt(((Wavelength*2*n*eBeam.partStatMom1.gamma**2)/undPer)-1)
+    print("K: ",K)
     B = K/(undPer*KtoBfactor)	# Peak Horizontal field [T] (undulator)
 
 
